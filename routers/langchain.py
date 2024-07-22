@@ -22,32 +22,48 @@ llm = ChatOllama(model=model_id, device=device)
 print("[LangChain]-[" + model_id + "]", llm.invoke("Hello World!"))
 print("[LangChain] Imported LLM Model :", model_id)
 
-def parse_JSON(llm_response, is_array=False):
-    json_pattern = re.compile(r'{[^{}]*?}')
 
-    # LLM 응답에서 JSON 값 찾기
-    json_match = json_pattern.findall(llm_response)
+def extract_and_parse_json(text):
+    # JSON 객체를 찾는 정규 표현식 패턴
+    json_pattern = re.compile(r'\{[\s\S]*?\}(?=\s*\{|\s*$)')
     
-    if json_match and is_array:
-        json_array = []
-        for string in json_match:
-            try:
-                json_array.append(json.loads(string))
-            except json.JSONDecodeError as e:
-                print(f"Error parsing JSON: {str(e)}")
-                print(string)
-        return json_array
-    elif json_match:
-        json_str = json_match[-1]
+    # 텍스트에서 모든 JSON 객체 찾기
+    json_matches = json_pattern.findall(text)
+    
+    result = []
+    for json_str in json_matches:
         try:
-            json_data = json.loads(json_str)
-            return json_data
-        except json.JSONDecodeError:
-            print("[LangChain]-[parse_JSON] Invalid JSON format")
-            return None
-    else:
-        print("[LangChain]-[parse_JSON] No JSON found in the LLM response")
+            # 중괄호 균형 맞추기
+            open_braces = json_str.count('{')
+            close_braces = json_str.count('}')
+            if open_braces > close_braces:
+                json_str += '}' * (open_braces - close_braces)
+            
+            # 콤마 추가 및 대괄호로 감싸기
+            json_str = json_str.replace('}\n{', '},{')
+            if not json_str.strip().startswith('['):
+                json_str = '[' + json_str + ']'
+            
+            # JSON 파싱
+            parsed_json = json.loads(json_str)
+            
+            # 단일 객체인 경우 리스트에서 추출
+            if isinstance(parsed_json, list) and len(parsed_json) == 1:
+                parsed_json = parsed_json[0]
+            
+            print(parsed_json)
+
+            result.append(parsed_json)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {str(e)}")
+            print(f"Problematic JSON string: {json_str}")
+
+    if not result:
+        print("No valid JSON data found in the input text")
         return None
+
+    return result
+
     
 ######## Filter LangChain ########
 async def filter_office(officeData):
@@ -64,9 +80,10 @@ async def filter_office(officeData):
         {officeData}
 
         위 데이터들을 아래의 조건에 맞게 분류해줘
+        이때 정확하게 아래 JSON 형태로 결과를 출력해줘
         1. 모니터 유무
         {{
-            "filter" : "monitor"
+            "filter" : "Monitor"
             "data" : [
                 {{
                     "status" : "Y"
@@ -80,7 +97,7 @@ async def filter_office(officeData):
         }}
         2. 회의실 유무
         {{
-            "filter" : "conference"
+            "filter" : "ConferenceRoom"
             "data" : [
                 {{
                     "status" : "Y"
@@ -94,7 +111,7 @@ async def filter_office(officeData):
         }}
         3. 카페형 오피스 / 공유형 오피스 / 미분류
         {{
-            "filter" : "type"
+            "filter" : "OfficeType"
             "data" : [
                 {{
                     "status" : "cafe"
@@ -112,7 +129,7 @@ async def filter_office(officeData):
         }}
         4. 주차 공간 유무
         {{
-            "filter" : "park"
+            "filter" : "Parking"
             "data" : [
                 {{
                     "status" : "Y"
@@ -126,7 +143,7 @@ async def filter_office(officeData):
         }}
         5. 폰부스 유무
         {{
-            "filter" : "phone"
+            "filter" : "PhoneBooth"
             "data" : [
                 {{
                     "status" : "Y"
@@ -144,8 +161,7 @@ async def filter_office(officeData):
         b. 설명 없이 JSON 결과만 제공해줘
         c. 만약 3번 카페형 오피스 / 공유형 오피스 / 미분류 필터는 언급이 없다면 미분류로 해줘
         d. 만약 3번을 제외한 각 filter에 대한 언급이 없으면 "status" : "N"로 분류해줘
-        e. JSON을 출력할 때 각 filter의 제목은 생략하고 들여쓰기를 해줘
-        f. 누락없이 모든 오피스를 분류해줘
+        e. 누락없이 모든 오피스를 분류해줘
     """)
 
     chain = (
@@ -159,7 +175,7 @@ async def filter_office(officeData):
                "officeData" : officeData,
         })
 
-    json_result = parse_JSON(filter_result, True)
+    json_result = extract_and_parse_json(filter_result)
 
     if not json_result:
         return None
