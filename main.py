@@ -2,6 +2,8 @@ import asyncio
 from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 from routers import langchain
 
 from typing import List
@@ -29,9 +31,11 @@ class OfficeList(BaseModel):
     offices: List[Office]
 
 
+app.mount("/images", StaticFiles(directory="images"), name="images")
+
 @app.get("/")
 def read_root():
-    return {"Hello": "MayDay FastAPI AI Serving!"}
+    return FileResponse("./templates/index.html")
 
 
 @app.post("/filter_office")
