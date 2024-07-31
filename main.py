@@ -23,14 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class Office(BaseModel):
-    name: str
-    description: str
-
-class OfficeList(BaseModel):
-    offices: List[Office]
-
-
 app.mount("/images", StaticFiles(directory="images"), name="images")
 
 @app.get("/")
@@ -38,11 +30,30 @@ def read_root():
     return FileResponse("./templates/index.html")
 
 
+class Office(BaseModel):
+    name: str
+    description: str
+
+class OfficeList(BaseModel):
+    offices: List[Office]
+
 @app.post("/filter_office")
 async def filter_office(officeData: OfficeList):
 
     filter_result = await asyncio.create_task(langchain.filter_office(
         officeData
+    ))
+    
+    return filter_result
+
+class Description(BaseModel):
+    description: str
+
+@app.post("/create_proposal")
+async def create_proposal(req: Description):
+
+    filter_result = await asyncio.create_task(langchain.create_proposal(
+        req.description
     ))
     
     return filter_result
