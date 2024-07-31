@@ -48,12 +48,18 @@ async def filter_office(officeData: OfficeList):
 
 class Description(BaseModel):
     description: str
+    answer1: str
+    answer2: str
+    answer3 : str
 
 @app.post("/create_proposal")
 async def create_proposal(req: Description):
 
-    filter_result = await asyncio.create_task(langchain.create_proposal(
-        req.description
+    proposal_result = await asyncio.create_task(langchain.create_proposal(
+        req.description,
+        req.answer1,
+        req.answer2,
+        req.answer3
     ))
     
-    return filter_result
+    return proposal_result

@@ -15,7 +15,7 @@ if device.type == "cuda":
 print("[LangChain] Torch CUDA Available : ", torch.cuda.is_available())
 print("[LangChain] Current Device : ", device)
 
-model_id = "llama3.1"
+model_id = "llama3"
 
 print("[LangChain] Importing LLM Model :", model_id)
 llm = ChatOllama(model=model_id, device=device)
@@ -25,11 +25,11 @@ print("[LangChain] Imported LLM Model :", model_id)
 
 def extract_and_parse_json(text):
     # JSON 객체를 찾는 정규 표현식 패턴
-    json_pattern = re.compile(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}')
-    
+    json_pattern = re.compile(r'\{[\s\S]*?\}(?=\s*\{|\s*$)')
+
     # 텍스트에서 모든 JSON 객체 찾기
     json_matches = json_pattern.findall(text)
-    
+
     result = []
     for json_str in json_matches:
         try:
@@ -38,20 +38,19 @@ def extract_and_parse_json(text):
             close_braces = json_str.count('}')
             if open_braces > close_braces:
                 json_str += '}' * (open_braces - close_braces)
-            
-            # 줄바꿈 문자를 이스케이프 처리
-            json_str = json_str.replace('\n', '').replace('\r', '')
 
-            # 시작과 끝의 대괄호 제거 (있는 경우)
-            json_str = json_str.strip()
-            if json_str.startswith('['):
-                json_str = json_str[1:]
-            if json_str.endswith(']'):
-                json_str = json_str[:-1]
-            
+            # 콤마 추가 및 대괄호로 감싸기
+            json_str = json_str.replace('}\n{', '},{')
+            if not json_str.strip().startswith('['):
+                json_str = '[' + json_str + ']'
+
             # JSON 파싱
             parsed_json = json.loads(json_str)
-            
+
+            # 단일 객체인 경우 리스트에서 추출
+            if isinstance(parsed_json, list) and len(parsed_json) == 1:
+                parsed_json = parsed_json[0]
+
             print(parsed_json)
 
             result.append(parsed_json)
@@ -81,7 +80,7 @@ async def filter_office(officeData):
         {officeData}
 
         위 데이터들을 아래의 조건에 맞게 분류해줘
-        이때 정확하게 아래 JSON 형태로 결과를 출력해줘
+        이때 반드시 JSON 형태로 결과를 출력해줘
         1. 모니터 유무
         {{
             "filter" : "Monitor",
@@ -185,9 +184,53 @@ async def filter_office(officeData):
     
     return json_result
 
+
+def proposal_parse_json(text):
+    # JSON 객체를 찾는 정규 표현식 패턴
+    json_pattern = re.compile(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}')
+    
+    # 텍스트에서 모든 JSON 객체 찾기
+    json_matches = json_pattern.findall(text)
+    
+    result = []
+    for json_str in json_matches:
+        try:
+            # 중괄호 균형 맞추기
+            open_braces = json_str.count('{')
+            close_braces = json_str.count('}')
+            if open_braces > close_braces:
+                json_str += '}' * (open_braces - close_braces)
+            
+            # 줄바꿈 문자를 이스케이프 처리
+            json_str = json_str.replace('\n', '').replace('\r', '')
+
+            # 시작과 끝의 대괄호 제거 (있는 경우)
+            json_str = json_str.strip()
+            if json_str.startswith('['):
+                json_str = json_str[1:]
+            if json_str.endswith(']'):
+                json_str = json_str[:-1]
+            
+            # JSON 파싱
+            parsed_json = json.loads(json_str)
+            
+            print(parsed_json)
+
+            result.append(parsed_json)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {str(e)}")
+            print(f"Problematic JSON string: {json_str}")
+
+    if not result:
+        print("No valid JSON data found in the input text")
+        return None
+
+    return result
+
 ######## Create Proposal ########
-async def create_proposal(description):
+async def create_proposal(description, answer1, answer2, answer3):
     print("\n[LangChain]-[create_proposal] Description :", description)
+    print("[LangChain]-[create_proposal] Answers", answer1, answer2, answer3)
 
     prompt = ChatPromptTemplate.from_template("""
         너는 현재 워케이션을 신청하고자 하는 직장인이야
@@ -216,19 +259,27 @@ async def create_proposal(description):
             "name" : "1) 지원동기",
             "content" : "content value"
         }}
+        1) 지원동기에 대해 미리 작성해둔 내용은 아래와 같아
+        {answer1}
         {{
             "name" : "2) 여행계획",
             "content" : "content value"
         }}
+        2) 여행계획에 대해 미리 작성해둔 내용은 아래와 같아
+        {answer2}
         {{
             "name" : "3) 홍보계획",
             "content" : "content value"
         }}
-
-        a. content value에 각 제안서 항목의 내용을 작성해서 넣어줘
-        b. content value는 반드시 200자 이상 300자 내외의 한국어로 작성해줘
-        c. 절대로 content value 항목의 내용 안에서 프로그램, 브랜드, 내용이나 구문, 표현을 반복해서 작성하지 말아줘
-        d. JSON의 모든 content value값을 한국어로 작성해야해
+        3) 홍보계획에 대해 미리 작성해둔 내용은 아래와 같아
+        {answer3}
+        
+        a. 각 항목에 미리 작성해둔 내용을 바탕으로 content value값을 작성해줘
+        b. content value는 모두 존댓말로 작성해줘
+        c. content value에 각 제안서 항목의 내용을 작성해서 넣어줘
+        d. content value는 반드시 400자 이상 500자 내외의 한국어로 작성해줘
+        e. 절대로 content value 항목의 내용 안에서 프로그램, 브랜드, 내용이나 구문, 표현을 반복해서 작성하지 말아줘
+        f. JSON의 모든 content value값을 한국어로 작성해야해
     """)
 
     chain = (
@@ -240,11 +291,14 @@ async def create_proposal(description):
     filter_result = await asyncio.to_thread(
         chain.invoke, {
                "description" : description,
+               "answer1" : answer1,
+               "answer2" : answer2,
+               "answer3" : answer3
         })
 
     print("\n[LangChain]-[create_proposal] ", filter_result)
 
-    json_result = extract_and_parse_json(filter_result)
+    json_result = proposal_parse_json(filter_result)
 
     if not json_result:
         return None
