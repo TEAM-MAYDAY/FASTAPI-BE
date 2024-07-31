@@ -245,31 +245,34 @@ async def create_proposal(description, answer1, answer2, answer3):
         - 해당 지역의 특징 등 이해도 및 여행의지를 포함해서 작성해줘
         - 해당 지역에 정착하여 살 의향, 계획에 대해 자세하게 작성해줘
         - 해당 워케이션의 프로그램, 브랜드에 관한 내용을 포함해줘
+        - 400자 이상 500자 내외
 
         2) 여행계획
         - 여행일정의 구체성 / 여행기간 및 여행일정을 토대로 구체적으로 작성해줘야 해
         - 여행 기간은 1주일 이내의 기간으로 0일차의 형식으로 작성해줘
         - 해당 워케이션의 프로그램, 브랜드에 관한 내용을 포함해줘
+        - 400자 이상 500자 내외
 
         3) 홍보계획
         - SNS 팔로우 수 등 고려 홍보 효과성을 생각하여 홍보방법의 적절성(시기, 횟수, 매체 등 ) 에 대한 내용이 포함해줘
-
+        - 400자 이상 500자 내외
+                                              
         이때 제안서의 내용에 맞게 아래에 주어진 모든 조건들을 반드시 맞추어서 모든 content value값이 한국어인 JSON을 만들어줘
         {{
             "name" : "1) 지원동기",
-            "content" : "content value"
+            "content" : content value
         }}
         1) 지원동기에 대해 미리 작성해둔 내용은 아래와 같아
         {answer1}
         {{
             "name" : "2) 여행계획",
-            "content" : "content value"
+            "content" : content value
         }}
         2) 여행계획에 대해 미리 작성해둔 내용은 아래와 같아
         {answer2}
         {{
             "name" : "3) 홍보계획",
-            "content" : "content value"
+            "content" : content value
         }}
         3) 홍보계획에 대해 미리 작성해둔 내용은 아래와 같아
         {answer3}
@@ -278,8 +281,9 @@ async def create_proposal(description, answer1, answer2, answer3):
         b. content value는 모두 존댓말로 작성해줘
         c. content value에 각 제안서 항목의 내용을 작성해서 넣어줘
         d. content value는 반드시 400자 이상 500자 내외의 한국어로 작성해줘
-        e. 절대로 content value 항목의 내용 안에서 프로그램, 브랜드, 내용이나 구문, 표현을 반복해서 작성하지 말아줘
-        f. JSON의 모든 content value값을 한국어로 작성해야해
+        e. content value의 대명사는 '저는, 제가, 저의' 등으로 항상 고정해줘
+        f. 절대로 content value 항목의 내용 안에서 프로그램, 브랜드, 내용이나 구문, 표현을 반복해서 작성하지 말아줘
+        g. JSON의 모든 content value값을 한국어로 작성해야해
     """)
 
     chain = (
