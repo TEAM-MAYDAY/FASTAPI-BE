@@ -51,6 +51,9 @@ class Description(BaseModel):
     answer1: str
     answer2: str
     answer3 : str
+    interest: str
+    job : str
+    purpose : str
 
 @app.post("/create_proposal")
 async def create_proposal(req: Description):
@@ -59,7 +62,10 @@ async def create_proposal(req: Description):
         req.description,
         req.answer1,
         req.answer2,
-        req.answer3
+        req.answer3,
+        req.interest,
+        req.job,
+        req.purpose
     ))
     
     return proposal_result

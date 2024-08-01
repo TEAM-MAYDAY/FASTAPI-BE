@@ -228,12 +228,14 @@ def proposal_parse_json(text):
     return result
 
 ######## Create Proposal ########
-async def create_proposal(description, answer1, answer2, answer3):
-    print("\n[LangChain]-[create_proposal] Description :", description)
-    print("[LangChain]-[create_proposal] Answers", answer1, answer2, answer3)
+async def create_proposal(description, answer1, answer2, answer3, interest, job, purpose):
+    print("\n[LangChain]-[create_proposal] Description\n", description)
+    print("\n[LangChain]-[create_proposal] Answers \n", answer1, answer2, answer3)
+    print("\n[LangChain]-[create_proposal] User Info \n", interest, job, purpose)
 
     prompt = ChatPromptTemplate.from_template("""
-        너는 현재 워케이션을 신청하고자 하는 직장인이야
+        너는 현재 워케이션을 신청하고자 하는 {job}이야
+        너는 {interest}에 관심이 있고 {purpose}와 같은 목적을 가지고 워케이션을 가고자 해
 
         또한 워케이션에 대한 정보는 아래와 같아
         {description}
@@ -257,7 +259,7 @@ async def create_proposal(description, answer1, answer2, answer3):
         - SNS 팔로우 수 등 고려 홍보 효과성을 생각하여 홍보방법의 적절성(시기, 횟수, 매체 등 ) 에 대한 내용이 포함해줘
         - 400자 이상 500자 내외
                                               
-        이때 제안서의 내용에 맞게 아래에 주어진 모든 조건들을 반드시 맞추어서 모든 content value값이 한국어인 JSON을 만들어줘
+        이때 제안서의 내용과 너의 직업, 관심사, 목적 맞게 아래에 주어진 모든 조건들을 반드시 맞추어서 모든 content value값이 한국어인 JSON을 만들어줘
         {{
             "name" : "1) 지원동기",
             "content" : content value
@@ -297,9 +299,12 @@ async def create_proposal(description, answer1, answer2, answer3):
                "description" : description,
                "answer1" : answer1,
                "answer2" : answer2,
-               "answer3" : answer3
+               "answer3" : answer3,
+               "interest" : interest,
+               "job" : job,
+               "purpose" : purpose
         })
-
+    
     print("\n[LangChain]-[create_proposal] ", filter_result)
 
     json_result = proposal_parse_json(filter_result)
