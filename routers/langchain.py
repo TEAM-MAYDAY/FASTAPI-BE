@@ -68,6 +68,8 @@ def extract_and_parse_json(text):
 ######## Filter LangChain ########
 async def filter_office(officeData):
     print("\n[LangChain]-[filter_office] officeData :", officeData)
+    officeNum = len(officeData.offices)
+    print(officeNum)
 
     prompt = ChatPromptTemplate.from_template("""
         너는 현재 기업들의 워케이션을 위한 데이터를 분류하는 담당자야
@@ -161,7 +163,7 @@ async def filter_office(officeData):
         b. 설명 없이 JSON 결과만 제공해줘
         c. 만약 3번 카페형 오피스 / 공유형 오피스 / 미분류 필터는 언급이 없다면 미분류로 해줘
         d. 만약 3번을 제외한 각 filter에 대한 언급이 없으면 "status" : "N"로 분류해줘
-        e. 누락없이 모든 오피스를 분류해줘
+        e. 누락없이 모든 {officeNum}개의 오피스를 분류해줘
     """)
 
     chain = (
@@ -173,6 +175,7 @@ async def filter_office(officeData):
     filter_result = await asyncio.to_thread(
         chain.invoke, {
                "officeData" : officeData,
+               "officeNum" : officeNum,
         })
     
     print("\n[LangChain]-[filter_office] ", filter_result)
@@ -308,6 +311,69 @@ async def create_proposal(description, answer1, answer2, answer3, interest, job,
     print("\n[LangChain]-[create_proposal] ", filter_result)
 
     json_result = proposal_parse_json(filter_result)
+
+    if not json_result:
+        return None
+    
+    return json_result
+
+
+######## Description LangChain ########
+async def description_office(officeData):
+    print("\n[LangChain]-[description_office] officeData :", officeData)
+    officeNum = len(officeData.offices)
+    print(officeNum)
+
+    prompt = ChatPromptTemplate.from_template("""
+        너는 현재 기업들의 워케이션을 위한 데이터를 정리하는 담당자야
+        {{
+            "name" : "오피스의 이름"
+            "description" : "오피스에 대한 설명"
+        }}
+        이때 주어지는 데이터는 위와 같이 name과 description이야
+
+        {officeData}
+
+        각 데이터들을 아래의 조건에 맞게 정리해줘
+        이때 반드시 JSON 배열 형태로 결과를 출력해줘
+        {{
+            "phoneNumber" : Value,
+            "address" : Value,
+            "operatingTime" : Value,
+            "locationIntroduction" : Value,
+            "providedDetails" : [
+            ]
+        }}
+        phoneNumber의 Value에는 해당 장소의 전화번호를 적어줘
+        address의 Value에는 해당 장소의 주소를 적어줘
+        operatingTime의 Value에는 해당 장소의 운영시간을 적어줘
+        locationIntroduction의 Value에는 해당 장소의 소개글을 적어줘
+        providedDetails의 Value에는 위 데이터에서 정리되지 않는 데이터들을 정리해줘
+        providedDetails의 Value에는 각 정리된 데이터를 별도의 분류 없이 String 값의 배열로만 집어넣어줘
+
+        이때 아래와 같은 조건을 지켜서 결과를 제공해줘
+        a. JSON 형태는 내가 제공한 조건 그대로 바꾸지 말고정리해줘
+        b. 설명 없이 JSON 결과만 제공해줘
+        c. 만약 각 Value에 대한 데이터가 없으면 Value에 null이라고 표시해줘
+        d. 모든 Value 값은 한국어로 작성해줘
+        e. 누락없이 모든 {officeNum}개 오피스의 name과 description를 분류해줘
+    """)
+
+    chain = (
+        prompt 
+        | llm 
+        | StrOutputParser()
+    )
+
+    result = await asyncio.to_thread(
+        chain.invoke, {
+               "officeData" : officeData,
+               "officeNum" : officeNum
+        })
+    
+    print("\n[LangChain]-[description_office] ", result)
+
+    json_result = proposal_parse_json(result)
 
     if not json_result:
         return None

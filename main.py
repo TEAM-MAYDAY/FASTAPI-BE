@@ -69,3 +69,12 @@ async def create_proposal(req: Description):
     ))
     
     return proposal_result
+
+@app.post("/description_office")
+async def description_office(officeData: OfficeList):
+
+    proposal_result = await asyncio.create_task(langchain.description_office(
+        officeData
+    ))
+    
+    return proposal_result
