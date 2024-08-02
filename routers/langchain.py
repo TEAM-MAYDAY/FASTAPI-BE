@@ -39,10 +39,12 @@ def extract_and_parse_json(text):
             if open_braces > close_braces:
                 json_str += '}' * (open_braces - close_braces)
 
-            # 콤마 추가 및 대괄호로 감싸기
-            json_str = json_str.replace('}\n{', '},{')
-            if not json_str.strip().startswith('['):
-                json_str = '[' + json_str + ']'
+            # 시작과 끝의 대괄호 제거 (있는 경우)
+            json_str = json_str.strip()
+            if json_str.startswith('['):
+                json_str = json_str[1:]
+            if json_str.endswith(']'):
+                json_str = json_str[:-1]
 
             # JSON 파싱
             parsed_json = json.loads(json_str)
