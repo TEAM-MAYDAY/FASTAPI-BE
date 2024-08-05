@@ -51,7 +51,6 @@ class Description(BaseModel):
     answer1: str
     answer2: str
     answer3 : str
-    interest: str
     job : str
     purpose : str
 
@@ -63,7 +62,6 @@ async def create_proposal(req: Description):
         req.answer1,
         req.answer2,
         req.answer3,
-        req.interest,
         req.job,
         req.purpose
     ))

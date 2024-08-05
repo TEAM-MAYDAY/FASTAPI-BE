@@ -233,14 +233,14 @@ def proposal_parse_json(text):
     return result
 
 ######## Create Proposal ########
-async def create_proposal(description, answer1, answer2, answer3, interest, job, purpose):
+async def create_proposal(description, answer1, answer2, answer3, job, purpose):
     print("\n[LangChain]-[create_proposal] Description\n", description)
     print("\n[LangChain]-[create_proposal] Answers \n", answer1, answer2, answer3)
-    print("\n[LangChain]-[create_proposal] User Info \n", interest, job, purpose)
+    print("\n[LangChain]-[create_proposal] User Info \n", job, purpose)
 
     prompt = ChatPromptTemplate.from_template("""
         너는 현재 워케이션을 신청하고자 하는 {job}이야
-        너는 {interest}에 관심이 있고 {purpose}와 같은 목적을 가지고 워케이션을 가고자 해
+        너는 {purpose}와 같은 목적을 가지고 워케이션을 가고자 해
 
         또한 워케이션에 대한 정보는 아래와 같아
         {description}
@@ -305,7 +305,6 @@ async def create_proposal(description, answer1, answer2, answer3, interest, job,
                "answer1" : answer1,
                "answer2" : answer2,
                "answer3" : answer3,
-               "interest" : interest,
                "job" : job,
                "purpose" : purpose
         })
@@ -339,6 +338,7 @@ async def description_office(officeData):
         각 데이터들을 아래의 조건에 맞게 정리해줘
         이때 반드시 JSON 배열 형태로 결과를 출력해줘
         {{
+            "name" : Value
             "phoneNumber" : Value,
             "address" : Value,
             "operatingTime" : Value,
@@ -346,6 +346,7 @@ async def description_office(officeData):
             "providedDetails" : [
             ]
         }}
+        name의 Value에는 주어진 데이터는 name의 오피스의 이름을 그대로 적어줘
         phoneNumber의 Value에는 해당 장소의 전화번호를 적어줘
         address의 Value에는 해당 장소의 주소를 적어줘
         operatingTime의 Value에는 해당 장소의 운영시간을 적어줘
