@@ -24,37 +24,33 @@ print("[LangChain] Imported LLM Model :", model_id)
 
 
 def extract_and_parse_json(text):
-    # JSON 객체를 찾는 정규 표현식 패턴
-    json_pattern = re.compile(r'\{[\s\S]*?\}(?=\s*\{|\s*$)')
+    def extract_json_objects(text):
+        json_objects = []
+        brace_count = 0
+        start_index = None
 
-    # 텍스트에서 모든 JSON 객체 찾기
-    json_matches = json_pattern.findall(text)
+        for i, char in enumerate(text):
+            if char == '{':
+                if brace_count == 0:
+                    start_index = i
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0 and start_index is not None:
+                    json_objects.append(text[start_index:i+1])
+                    start_index = None
+
+        return json_objects
 
     result = []
-    for json_str in json_matches:
+    json_objects = extract_json_objects(text)
+
+    for json_str in json_objects:
         try:
-            # 중괄호 균형 맞추기
-            open_braces = json_str.count('{')
-            close_braces = json_str.count('}')
-            if open_braces > close_braces:
-                json_str += '}' * (open_braces - close_braces)
-
-            # 시작과 끝의 대괄호 제거 (있는 경우)
-            json_str = json_str.strip()
-            if json_str.startswith('['):
-                json_str = json_str[1:]
-            if json_str.endswith(']'):
-                json_str = json_str[:-1]
-
-            # JSON 파싱
+            # 줄바꿈과 공백 처리
+            json_str = re.sub(r'\s+', ' ', json_str)
             parsed_json = json.loads(json_str)
-
-            # 단일 객체인 경우 리스트에서 추출
-            if isinstance(parsed_json, list) and len(parsed_json) == 1:
-                parsed_json = parsed_json[0]
-
             print(parsed_json)
-
             result.append(parsed_json)
         except json.JSONDecodeError as e:
             print(f"Error parsing JSON: {str(e)}")
@@ -162,7 +158,7 @@ async def filter_office(officeData):
 
         이때 아래와 같은 조건을 지켜서 결과를 제공해줘
         a. JSON 형태는 내가 제공한 조건 그대로 바꾸지 말고 분류해줘
-        b. 설명 없이 JSON 결과만 제공해줘
+        b. 설명 없이 각각 번호에 맞는 JSON 결과만 제공해줘
         c. 만약 3번 카페형 오피스 / 공유형 오피스 / 미분류 필터는 언급이 없다면 미분류로 해줘
         d. 만약 3번을 제외한 각 filter에 대한 언급이 없으면 "status" : "N"로 분류해줘
         e. 누락없이 모든 {officeNum}개의 오피스를 분류해줘
